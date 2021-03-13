@@ -48,6 +48,9 @@ contract RulerCore is Ownable, IRulerCore, IERC3156FlashLender, ReentrancyGuard 
   mapping(address => Pair[]) private pairList;
   mapping(address => uint256) public override feesMap;
 
+  // v1.0.1
+  event FlashLoan(address _token, address _borrower, uint256 _amount);
+
   modifier onlyNotPaused() {
     require(!paused, "Ruler: paused");
     _;
@@ -236,8 +239,7 @@ contract RulerCore is Ownable, IRulerCore, IERC3156FlashLender, ReentrancyGuard 
     emit Collect(msg.sender, _col, _paired,_expiry,  _mintRatio, _rcTokenAmt);
   }
 
-  /// @notice anyone can call if they pay, no reason to prevent that. This will enable future xRULER or other fee related features
-  function collectFees(IERC20[] calldata _tokens) external override {
+  function collectFees(IERC20[] calldata _tokens) external override onlyOwner {
     for (uint256 i = 0; i < _tokens.length; i++) {
       IERC20 token = _tokens[i];
       uint256 fee = feesMap[address(token)];
@@ -309,6 +311,7 @@ contract RulerCore is Ownable, IRulerCore, IERC3156FlashLender, ReentrancyGuard 
     uint256 receivedFees = token.balanceOf(address(this)) - tokenBalBefore;
     require(receivedFees >= fees, "Ruler: not enough fees");
     feesMap[_token] = feesMap[_token] + receivedFees;
+    emit FlashLoan(_token, address(_receiver), _amount);
     return true;
   }
 
@@ -422,7 +425,7 @@ contract RulerCore is Ownable, IRulerCore, IERC3156FlashLender, ReentrancyGuard 
 
   /// @notice version of current Ruler Core hardcoded
   function version() external pure override returns (string memory) {
-    return '1.0';
+    return '1.0.1';
   }
 
   function _safeTransfer(IERC20 _token, address _account, uint256 _amount) private {

@@ -137,6 +137,8 @@ interface IRulerCore {
     uint256 _mintRatio,
     uint256 _rcTokenAmt
   ) external;
+
+  // access restriction - owner (dev)
   function collectFees(IERC20[] calldata _tokens) external;
 
   // access restriction - owner (dev) & responder
